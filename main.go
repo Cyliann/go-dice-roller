@@ -1,11 +1,24 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	"io"
 	"log"
+	"math/rand"
 	"net/http"
 	"sync"
 )
+
+type rollRequestPayload struct {
+	ID   uint32 `json:"id"`
+	Dice uint8  `json:"dice"`
+}
+
+type rollResponsePayload struct {
+	ID     uint32 `json:"id"`
+	Result uint8  `json:"result"`
+}
 
 var (
 	clients     = make(map[chan<- []byte]struct{})
@@ -13,9 +26,12 @@ var (
 )
 
 func main() {
+	var port = 8080
 	http.HandleFunc("/listen", eventsHandler)
 	http.HandleFunc("/roll", triggerHandler)
-	http.ListenAndServe(":8080", nil)
+
+	fmt.Printf("Welcome to Roll Dicer!\nListening on port %d...\n", port)
+	http.ListenAndServe(":"+fmt.Sprint(port), nil)
 }
 
 func eventsHandler(w http.ResponseWriter, r *http.Request) {
@@ -70,21 +86,37 @@ func triggerHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var requestPayload rollRequestPayload
+	if err := json.Unmarshal(body, &requestPayload); err != nil {
+		http.Error(w, "Invalid JSON payload", http.StatusBadRequest)
+		return
+	}
+
+	var responsePyaload rollResponsePayload
+	responsePyaload.ID = requestPayload.ID
+	responsePyaload.Result = uint8(rand.Intn(int(requestPayload.Dice)) + 1)
+
 	// Broadcast the message to all connected clients
-	broadcastMessage(body)
+	broadcastMessage(responsePyaload)
 
 	// Respond to the POST request
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Message sent\n"))
 }
 
-func broadcastMessage(message []byte) {
+func broadcastMessage(message interface{}) {
 	clientsLock.Lock()
 	defer clientsLock.Unlock()
 
+	// Convert the struct to JSON
+	jsonMessage, err := json.Marshal(message)
+	if err != nil {
+		log.Println("Error encoding struct to JSON:", err)
+		return
+	}
+
 	// Send the message to all connected clients
 	for client := range clients {
-		client <- message
+		client <- jsonMessage
 	}
 }
-
