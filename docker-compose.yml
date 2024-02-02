@@ -1,0 +1,10 @@
+version: '3.9'
+
+services:
+  myserver:
+    image: dice-roller
+
+networks:
+  default:
+    name: nginx
+    external: true
