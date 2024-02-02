@@ -5,6 +5,7 @@ on:
     branches: ["master"]
   pull_request:
     branches: ["master"]
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -13,14 +14,14 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v2
-    
+
       - name: Setup Docker
         uses: docker/setup-docker@v2
-    
+
       - name: Build Docker Image
         run: |
           docker build -t dice-roller .
 
       - name: Deploy using Docker Compose
         run: |
-          docker-compose up -d 
+          docker-compose up -d
