@@ -10,6 +10,10 @@ import (
 	"sync"
 )
 
+type greeting struct {
+	ID uint32 `json:"id"`
+}
+
 type rollRequestPayload struct {
 	ID   uint32 `json:"id"`
 	Dice uint8  `json:"dice"`
@@ -24,6 +28,8 @@ var (
 	clients     = make(map[chan<- []byte]struct{})
 	clientsLock sync.Mutex
 )
+
+var id_counter uint32 = 0
 
 func main() {
 	var port = 8080
@@ -53,8 +59,17 @@ func eventsHandler(w http.ResponseWriter, r *http.Request) {
 	clientsLock.Unlock()
 
 	// Send a welcome message when a client connects
-	welcomeMessage := "Welcome! Connection established.\n\n"
-	_, _ = w.Write([]byte(welcomeMessage))
+	var greeting greeting
+	greeting.ID = id_counter
+	id_counter++
+
+	message, err := json.Marshal(greeting)
+
+	if err != nil {
+		log.Printf("Error assigning ID: %d to a client %s", id_counter, r.RemoteAddr)
+	}
+
+	_, _ = w.Write([]byte(message))
 	w.(http.Flusher).Flush()
 
 	// Listen for messages from the channel and send them to the client
