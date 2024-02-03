@@ -15,9 +15,16 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v2
 
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "stable"
+
+      - name: Compile to binary
+        run: CGO_ENABLED=0 GOOS=linux go build -o bin
+
       - name: Build Docker image
-        run: |
-          docker buildx build --load --tag go-dice-roller .
+        run: docker build --load --tag go-dice-roller .
 
       - name: Run Docker image
         uses: addnab/docker-run-action@v3
