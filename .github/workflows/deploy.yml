@@ -23,12 +23,8 @@ jobs:
       - name: Compile to binary
         run: CGO_ENABLED=0 GOOS=linux go build -o bin
 
-      - name: Build Docker image
+      - name: Build a Docker image
         run: docker build --load --tag go-dice-roller .
 
-      - name: Run Docker image
-        uses: addnab/docker-run-action@v3
-        with:
-          image: go-dice-roller:latest
-          shell: bash
-          docker_network: nginx
+      - name: Run the Docker image
+        run: docker run --name go-dice-roller --network nginx go-dice-roller:latest &
