@@ -4,22 +4,23 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"math/rand"
 	"net/http"
 	"sync"
+
+	"github.com/charmbracelet/log"
 )
 
-type greeting struct {
+type Greeting struct {
 	ID uint32 `json:"id"`
 }
 
-type rollRequestPayload struct {
+type RollRequestPayload struct {
 	ID   uint32 `json:"id"`
 	Dice uint8  `json:"dice"`
 }
 
-type rollResponsePayload struct {
+type RollResponsePayload struct {
 	ID     uint32 `json:"id"`
 	Result uint8  `json:"result"`
 }
@@ -27,22 +28,26 @@ type rollResponsePayload struct {
 var (
 	clients     = make(map[chan<- []byte]struct{})
 	clientsLock sync.Mutex
+	id_counter  uint32 = 0
+	port               = 8080
 )
 
-var id_counter uint32 = 0
-
 func main() {
-	var port = 8080
-	http.HandleFunc("/listen", eventsHandler)
+	log.SetLevel(log.DebugLevel)
+	http.HandleFunc("/listen", clientHandler)
 	http.HandleFunc("/roll", triggerHandler)
 
-	fmt.Printf("Welcome to Roll Dicer!\nListening on port %d...\n", port)
-	http.ListenAndServe(":"+fmt.Sprint(port), nil)
+	fmt.Printf("Welcome to Roll Dicer!\nListening on port %d...\n\n", port)
+	log.Error(http.ListenAndServe(":"+fmt.Sprint(port), nil))
+	fmt.Print("Exiting...")
 }
 
-func eventsHandler(w http.ResponseWriter, r *http.Request) {
+func clientHandler(w http.ResponseWriter, r *http.Request) {
 	// Log a message when a client connects
-	log.Printf("Client connected from %s", r.RemoteAddr)
+	log.Debugf("Client connected from %s", r.RemoteAddr)
+
+	// Send a welcome message when a client connects
+	greet(w, r)
 
 	// Set headers for SSE
 	w.Header().Set("Content-Type", "text/event-stream")
@@ -58,28 +63,14 @@ func eventsHandler(w http.ResponseWriter, r *http.Request) {
 	clients[messageChan] = struct{}{}
 	clientsLock.Unlock()
 
-	// Send a welcome message when a client connects
-	var greeting greeting
-	greeting.ID = id_counter
-	id_counter++
-
-	message, err := json.Marshal(greeting)
-
-	if err != nil {
-		log.Printf("Error assigning ID: %d to a client %s", id_counter, r.RemoteAddr)
-	}
-
-	_, _ = w.Write([]byte(message))
-	w.(http.Flusher).Flush()
-
-	// Listen for messages from the channel and send them to the client
+	// Listen for messages from the channel and send them to clients
 	for {
 		select {
 		case message := <-messageChan:
 			_, err := w.Write(message)
 			if err != nil {
 				// If writing to the response fails, the client might have disconnected.
-				log.Printf("Client disconnected from %s. Closing SSE.", r.RemoteAddr)
+				log.Infof("Client disconnected from %s. Closing SSE.", r.RemoteAddr)
 
 				// Unregister the client channel
 				clientsLock.Lock()
@@ -93,6 +84,21 @@ func eventsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func greet(w http.ResponseWriter, r *http.Request) {
+	var greeting Greeting
+	greeting.ID = id_counter
+	id_counter++
+
+	greetingMessage, err := json.Marshal(greeting)
+
+	if err != nil {
+		log.Fatalf("Error assigning ID: %d to a client %s", id_counter, r.RemoteAddr)
+	}
+
+	w.Write([]byte(greetingMessage))
+	w.(http.Flusher).Flush()
+}
+
 func triggerHandler(w http.ResponseWriter, r *http.Request) {
 	// Read the POST body
 	body, err := io.ReadAll(r.Body)
@@ -101,13 +107,13 @@ func triggerHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var requestPayload rollRequestPayload
+	var requestPayload RollRequestPayload
 	if err := json.Unmarshal(body, &requestPayload); err != nil {
 		http.Error(w, "Invalid JSON payload", http.StatusBadRequest)
 		return
 	}
 
-	var responsePyaload rollResponsePayload
+	var responsePyaload RollResponsePayload
 	responsePyaload.ID = requestPayload.ID
 	responsePyaload.Result = uint8(rand.Intn(int(requestPayload.Dice)) + 1)
 
@@ -126,7 +132,7 @@ func broadcastMessage(message interface{}) {
 	// Convert the struct to JSON
 	jsonMessage, err := json.Marshal(message)
 	if err != nil {
-		log.Println("Error encoding struct to JSON:", err)
+		log.Error("Error encoding struct to JSON", "err", err)
 		return
 	}
 
@@ -134,4 +140,5 @@ func broadcastMessage(message interface{}) {
 	for client := range clients {
 		client <- jsonMessage
 	}
+	log.Debugf("A message has been broadcasted: %s", jsonMessage)
 }
