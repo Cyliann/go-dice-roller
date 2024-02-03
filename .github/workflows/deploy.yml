@@ -24,7 +24,10 @@ jobs:
         run: CGO_ENABLED=0 GOOS=linux go build -o bin
 
       - name: Build a Docker image
-        run: docker build --load --tag go-dice-roller .
+        run: |
+          docker stop go-dice-roller
+          docker rm go-dice-roller
+          docker build --tag go-dice-roller .
 
       - name: Run the Docker image
-        run: docker run --name go-dice-roller --network nginx go-dice-roller:latest &
+        run: docker run -d --name go-dice-roller --network nginx go-dice-roller:latest
