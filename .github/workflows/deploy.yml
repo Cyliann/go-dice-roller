@@ -15,17 +15,12 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v2
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
       - name: Build Docker image
-        uses: docker/build-push-action@v5
-        with:
-          tags: go-dice-roller:lates
-          load: true
+        run: |
+          docker buildx build --load --tag go-dice-roller .
 
       - name: Run Docker image
         uses: addnab/docker-run-action@v3
         with:
-          image: test-image:latestt
+          image: go-dice-roller:latest
           network: nginx
