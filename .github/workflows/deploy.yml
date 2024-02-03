@@ -30,4 +30,5 @@ jobs:
         uses: addnab/docker-run-action@v3
         with:
           image: go-dice-roller:latest
-          network: nginx
+          shell: bash
+          docker_network: nginx
