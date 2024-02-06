@@ -7,10 +7,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// type Greeting struct {
-// 	ID uint32 `json:"id"`
-// }
-//
+type Greeting struct {
+	ID uint32 `json:"id"`
+}
+
 // type RollRequestPayload struct {
 // 	ID   uint32 `json:"id"`
 // 	Dice uint8  `json:"dice"`
@@ -20,6 +20,8 @@ import (
 // 	ID     uint32 `json:"id"`
 // 	Result uint8  `json:"result"`
 // }
+
+var ID uint32 = 0
 
 func main() {
 	router := gin.Default()

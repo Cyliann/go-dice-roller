@@ -1,6 +1,8 @@
 package main
 
 import (
+	"encoding/json"
+
 	"github.com/charmbracelet/log"
 	"github.com/gin-gonic/gin"
 )
@@ -57,7 +59,18 @@ func (stream *Stream) ServeHTTP() gin.HandlerFunc {
 
 		c.Set("clientChan", clientChan)
 
-		c.Writer.Write([]byte("it works!"))
+		// Create a greeting with id
+		grt := Greeting{
+			ID: ID,
+		}
+		ID++
+		msg, err := json.Marshal(grt)
+		if err != nil {
+			log.Error("Error parsing a greeting. Client: %s", c.RemoteIP)
+			return
+		}
+
+		c.Writer.Write(append(msg, []byte("\n\n")...))
 		c.Writer.Flush()
 		c.Next()
 	}
