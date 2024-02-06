@@ -3,21 +3,23 @@ package main
 import (
 	"io"
 
+	"github.com/charmbracelet/log"
 	"github.com/gin-gonic/gin"
 )
 
 func handleClients(c *gin.Context) {
-	v, ok := c.Get("clientChan")
+	v, ok := c.Get("client")
 	if !ok {
+		log.Warn("Couldn't get client")
 		return
 	}
-	clientChan, ok := v.(ClientChan)
+	client, ok := v.(Client)
 	if !ok {
 		return
 	}
 	c.Stream(func(w io.Writer) bool {
 		// Stream message to client from message channel
-		if msg, ok := <-clientChan; ok {
+		if msg, ok := <-client.Chan; ok {
 			c.SSEvent(msg.EventType, msg.Data)
 			return true
 		}

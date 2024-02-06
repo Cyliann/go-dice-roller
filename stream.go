@@ -12,13 +12,18 @@ type Message struct {
 	Data      string
 }
 
+type Client struct {
+	Chan chan Message
+	Name string
+}
+
 type ClientChan chan Message
 
 type Stream struct {
 	Message       chan Message
-	NewClients    chan chan Message
-	ClosedClients chan chan Message
-	TotalClients  map[chan Message]bool
+	NewClients    chan Client
+	ClosedClients chan Client
+	TotalClients  map[Client]bool
 }
 
 func (stream *Stream) listen() {
@@ -32,13 +37,13 @@ func (stream *Stream) listen() {
 		// Remove closed client
 		case client := <-stream.ClosedClients:
 			delete(stream.TotalClients, client)
-			close(client)
+			close(client.Chan)
 			log.Infof("Removed client. %d registered clients", len(stream.TotalClients))
 
 		// Broadcast message to client
 		case eventMsg := <-stream.Message:
-			for clientMessageChan := range stream.TotalClients {
-				clientMessageChan <- eventMsg
+			for client := range stream.TotalClients {
+				client.Chan <- eventMsg
 			}
 		}
 	}
@@ -47,21 +52,23 @@ func (stream *Stream) listen() {
 func (stream *Stream) ServeHTTP() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Initialize client channel
-		clientChan := make(ClientChan)
+		name := c.Query("name")
+		client := Client{Chan: make(ClientChan), Name: name}
 
 		// Send new connection to event server
-		stream.NewClients <- clientChan
+		stream.NewClients <- client
 
 		defer func() {
 			// Send closed connection to event server
-			stream.ClosedClients <- clientChan
+			stream.ClosedClients <- client
 		}()
 
-		c.Set("clientChan", clientChan)
+		c.Set("client", client)
 
 		// Create a greeting with id
 		grt := Greeting{
-			ID: ID,
+			ID:   ID,
+			Name: name,
 		}
 		ID++
 		msg, err := json.Marshal(grt)
@@ -79,9 +86,9 @@ func (stream *Stream) ServeHTTP() gin.HandlerFunc {
 func New() Stream {
 	stream := Stream{
 		Message:       make(chan Message),
-		NewClients:    make(chan chan Message),
-		ClosedClients: make(chan chan Message),
-		TotalClients:  make(map[chan Message]bool),
+		NewClients:    make(chan Client),
+		ClosedClients: make(chan Client),
+		TotalClients:  make(map[Client]bool),
 	}
 
 	go stream.listen()

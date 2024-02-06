@@ -8,7 +8,8 @@ import (
 )
 
 type Greeting struct {
-	ID uint32 `json:"id"`
+	ID   uint32 `json:"id"`
+	Name string `json:"name"`
 }
 
 // type RollRequestPayload struct {
