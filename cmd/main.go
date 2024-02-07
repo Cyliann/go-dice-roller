@@ -23,6 +23,7 @@ func main() {
 	stream := server.NewStream()
 
 	router.GET("/listen", server.HeadersMiddleware(), (&stream).ServeHTTP(), server.HandleClients)
+	router.POST("/register", server.Register)
 
 	go func() {
 		for {

@@ -9,6 +9,16 @@ Subscribe to SSE. Returns an ID and a username as `"{ 'id': uint32, 'username': 
     |--------------- |
     | id   | uint32  |
     | username   | string  |
+
+- `/register`
+Create user and obtain JWT with POST
+
+    POST body { " username " : " example " }
+    
+    Response: {  "ID": id, "token": jwt, "username": "username"}
+    
+    
+
 - `/roll` 
 Triggers a roll request with `"{ 'id': uint32, 'dice': uint8 }"`
 

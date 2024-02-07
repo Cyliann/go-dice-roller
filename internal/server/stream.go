@@ -13,6 +13,7 @@ type Message struct {
 }
 
 type Client struct {
+	ID   uint
 	Chan chan Message
 	Name string
 }
@@ -51,9 +52,10 @@ func (stream *Stream) listen() {
 
 func (stream *Stream) ServeHTTP() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		var clientID uint = 1
 		// Initialize client channel
 		name := c.Query("username")
-		client := Client{Chan: make(ClientChan), Name: name}
+		client := Client{ID: clientID, Chan: make(ClientChan), Name: name}
 
 		// Send new connection to event server
 		stream.NewClients <- client
@@ -67,10 +69,10 @@ func (stream *Stream) ServeHTTP() gin.HandlerFunc {
 
 		// Create a greeting with id
 		grt := Greeting{
-			ID:   ID,
+			ID:   client.ID,
 			Name: name,
 		}
-		ID++
+		clientID++
 
 		msg, err := json.Marshal(grt)
 		if err != nil {
