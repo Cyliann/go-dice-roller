@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"encoding/json"
@@ -52,7 +52,7 @@ func (stream *Stream) listen() {
 func (stream *Stream) ServeHTTP() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Initialize client channel
-		name := c.Query("name")
+		name := c.Query("username")
 		client := Client{Chan: make(ClientChan), Name: name}
 
 		// Send new connection to event server
@@ -71,6 +71,7 @@ func (stream *Stream) ServeHTTP() gin.HandlerFunc {
 			Name: name,
 		}
 		ID++
+
 		msg, err := json.Marshal(grt)
 		if err != nil {
 			log.Error("Error parsing a greeting. Client: %s", c.RemoteIP)
@@ -83,7 +84,7 @@ func (stream *Stream) ServeHTTP() gin.HandlerFunc {
 	}
 }
 
-func New() Stream {
+func NewStream() Stream {
 	stream := Stream{
 		Message:       make(chan Message),
 		NewClients:    make(chan Client),

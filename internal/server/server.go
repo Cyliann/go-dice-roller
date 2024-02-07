@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"io"
@@ -7,7 +7,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func handleClients(c *gin.Context) {
+var ID uint32 = 0
+
+type Greeting struct {
+	ID   uint32 `json:"id"`
+	Name string `json:"username"`
+}
+
+func HandleClients(c *gin.Context) {
 	v, ok := c.Get("client")
 	if !ok {
 		log.Warn("Couldn't get client")
@@ -27,7 +34,7 @@ func handleClients(c *gin.Context) {
 	})
 }
 
-func broadcast(event string, message string, stream Stream) {
+func Broadcast(event string, message string, stream Stream) {
 	msg := Message{
 		EventType: event,
 		Data:      message,

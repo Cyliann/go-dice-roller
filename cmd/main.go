@@ -3,14 +3,10 @@ package main
 import (
 	"time"
 
+	"github.com/Cyliann/go-dice-roller/internal/server"
 	"github.com/charmbracelet/log"
 	"github.com/gin-gonic/gin"
 )
-
-type Greeting struct {
-	ID   uint32 `json:"id"`
-	Name string `json:"name"`
-}
 
 // type RollRequestPayload struct {
 // 	ID   uint32 `json:"id"`
@@ -22,17 +18,15 @@ type Greeting struct {
 // 	Result uint8  `json:"result"`
 // }
 
-var ID uint32 = 0
-
 func main() {
 	router := gin.Default()
-	stream := New()
+	stream := server.NewStream()
 
-	router.GET("/listen", HeadersMiddleware(), (&stream).ServeHTTP(), handleClients)
+	router.GET("/listen", server.HeadersMiddleware(), (&stream).ServeHTTP(), server.HandleClients)
 
 	go func() {
 		for {
-			broadcast("message", "It works!", stream)
+			server.Broadcast("message", "It works!", stream)
 			time.Sleep(time.Second * 2)
 		}
 	}()
