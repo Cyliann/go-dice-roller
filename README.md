@@ -1,5 +1,5 @@
 # :game_die: A server for multiplayer dice rolling :game_die:
-## Written in Go using Server Side Events
+## Written in Go using Server-Sent Events
 
 ### Endpoints:
 - `/listen?username="{name}"`

@@ -31,6 +31,7 @@ require (
 require (
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/charmbracelet/lipgloss v0.9.1 // indirect
+	github.com/dchest/uniuri v1.2.0
 	github.com/gin-gonic/gin v1.9.1
 	github.com/go-logfmt/logfmt v0.6.0 // indirect
 	github.com/golang-jwt/jwt v3.2.2+incompatible

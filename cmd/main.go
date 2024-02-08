@@ -6,7 +6,7 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/gin-gonic/gin"
 
-	"github.com/Cyliann/go-dice-roller/internal/server"
+	"github.com/Cyliann/go-dice-roller/internal/sse"
 )
 
 // type RollRequestPayload struct {
@@ -20,14 +20,19 @@ import (
 // }
 
 func main() {
+	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
-	stream := server.NewStream()
+	s := sse.NewServer()
 
-	router.GET("/listen", server.HeadersMiddleware(), (&stream).ServeHTTP(), server.HandleClients)
+	router.GET("/listen/:roomID", sse.HeadersMiddleware(), s.AddClientToStream(), sse.HandleClients())
+	router.GET("/listen", s.CreateStream(), func(c *gin.Context) { router.HandleContext(c) })
 
+	// Loop through all streams and send a test message
 	go func() {
 		for {
-			server.Broadcast("message", "It works!", stream)
+			for _, stream := range s.Streams {
+				sse.Broadcast("message", "It works!", stream)
+			}
 			time.Sleep(time.Second * 2)
 		}
 	}()
