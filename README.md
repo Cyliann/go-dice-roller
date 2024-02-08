@@ -3,21 +3,13 @@
 
 ### Endpoints:
 - `/listen?username="{name}"`
-Subscribe to SSE. Returns an ID and a username as `"{ 'id': uint32, 'username': string }"`
+Subscribe to SSE. Returns an ID wit JWT and a username as `"{ 'id': uint32, 'username': string, 'token': string }"`
 
     | Key   | Value  |
-    |--------------- |
+    |--------------- | --------------- |
     | id   | uint32  |
     | username   | string  |
-
-- `/register`
-Create user and obtain JWT with POST
-
-    POST body { " username " : " example " }
-    
-    Response: {  "ID": id, "token": jwt, "username": "username"}
-    
-    
+    | token   | string  |
 
 - `/roll` 
 Triggers a roll request with `"{ 'id': uint32, 'dice': uint8 }"`

@@ -1,14 +1,12 @@
 package server
 
 import (
-	//"github.com/dgrijalva/jwt-go"
-	//"go/token"
 	"io"
-	"net/http"
 
-	"github.com/Cyliann/go-dice-roller/internal/utils/token"
 	"github.com/charmbracelet/log"
 	"github.com/gin-gonic/gin"
+
+	"github.com/Cyliann/go-dice-roller/internal/utils/token"
 )
 
 var IDCounter uint = 0
@@ -22,7 +20,7 @@ type RegistrationInput struct {
 	Username string `json:"username" binding:"required"`
 }
 
-type RegisteredClient struct {
+type ClientGreeting struct {
 	ID       uint
 	Username string
 	Token    string
@@ -48,30 +46,23 @@ func HandleClients(c *gin.Context) {
 	})
 }
 
-func Register(c *gin.Context) {
-
-	var input RegistrationInput
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
+func Register(username string) ClientGreeting {
 	newToken, err := token.GenerateToken(uint(10))
 	if err != nil {
-		log.Error("Error creating JWT for user: ", input.Username)
-		return
+		log.Error("Error creating JWT for user: ", username)
+		return ClientGreeting{0, "", ""}
 	}
-	client := RegisteredClient{ID: IDCounter, Username: input.Username, Token: newToken}
-	c.JSON(http.StatusOK, gin.H{"ID": client.ID, "username": client.Username, "token": client.Token})
-
+	greeting := ClientGreeting{ID: IDCounter, Username: username, Token: newToken}
 	IDCounter++
+	return greeting
 }
 
-func Broadcast(event string, message string, stream Stream) {
+func Broadcast(event string, message string, s Stream) {
 	msg := Message{
 		EventType: event,
 		Data:      message,
 	}
-	stream.Message <- msg
+	s.Message <- msg
 }
 
 func HeadersMiddleware() gin.HandlerFunc {

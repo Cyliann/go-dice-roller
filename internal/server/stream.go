@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"net/http"
 
 	"github.com/charmbracelet/log"
 	"github.com/gin-gonic/gin"
@@ -52,10 +53,13 @@ func (stream *Stream) listen() {
 
 func (stream *Stream) ServeHTTP() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var clientID uint = 1
 		// Initialize client channel
-		name := c.Query("username")
-		client := Client{ID: clientID, Chan: make(ClientChan), Name: name}
+		username := c.Query("username")
+		if username == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Username cannot be empty"})
+			return
+		}
+		client := Client{ID: IDCounter, Chan: make(ClientChan), Name: username}
 
 		// Send new connection to event server
 		stream.NewClients <- client
@@ -67,13 +71,8 @@ func (stream *Stream) ServeHTTP() gin.HandlerFunc {
 
 		c.Set("client", client)
 
-		// Create a greeting with id
-		grt := Greeting{
-			ID:   client.ID,
-			Name: name,
-		}
-		clientID++
-
+		// Register client and create a greeting with id and token
+		grt := Register(username)
 		msg, err := json.Marshal(grt)
 		if err != nil {
 			log.Error("Error parsing a greeting. Client: %s", c.RemoteIP)

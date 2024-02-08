@@ -3,9 +3,10 @@ package main
 import (
 	"time"
 
-	"github.com/Cyliann/go-dice-roller/internal/server"
 	"github.com/charmbracelet/log"
 	"github.com/gin-gonic/gin"
+
+	"github.com/Cyliann/go-dice-roller/internal/server"
 )
 
 // type RollRequestPayload struct {
@@ -23,7 +24,6 @@ func main() {
 	stream := server.NewStream()
 
 	router.GET("/listen", server.HeadersMiddleware(), (&stream).ServeHTTP(), server.HandleClients)
-	router.POST("/register", server.Register)
 
 	go func() {
 		for {
