@@ -3,20 +3,25 @@ package sse
 import (
 	"encoding/json"
 	"errors"
-	"io"
-	"net/http"
-
+	"fmt"
+	"github.com/Cyliann/go-dice-roller/internal/utils/token"
 	"github.com/charmbracelet/log"
 	"github.com/dchest/uniuri"
 	"github.com/gin-gonic/gin"
-
-	"github.com/Cyliann/go-dice-roller/internal/utils/token"
+	"io"
+	"math/rand"
+	"net/http"
+	"strconv"
 )
 
 var IDCounter uint = 0
 
-type RegistrationInput struct {
-	Username string `json:"username" binding:"required"`
+//type RegistrationInput struct {
+//	Username string `json:"username" binding:"required"`
+//}
+
+type RequestBody struct {
+	Dice string `json:"dice" binding:"required"`
 }
 
 type ClientGreeting struct {
@@ -24,6 +29,13 @@ type ClientGreeting struct {
 	Room     string
 	Username string
 	Token    string
+}
+
+type DiceResult struct {
+	Username string
+	Room     string
+	Result   int
+	//Token    string
 }
 
 type Server struct {
@@ -111,8 +123,36 @@ func HandleClients() gin.HandlerFunc {
 	}
 }
 
+// Handler for post requests that runs RollDice fucntion
+func (s *Server) HandleRolls() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		username := c.Query("username")
+		room := c.Param("roomID")
+		var requestBody RequestBody
+
+		if err := c.ShouldBindJSON(&requestBody); err != nil {
+			log.Error("Error while accessing request body JSON: %s", err)
+		}
+		//c.JSON(http.StatusOK, requestBody)
+		diceResult := RollDice(username, room, requestBody.Dice)
+		msg := fmt.Sprintf("User %s rolled %s in the room %s", diceResult.Username, strconv.Itoa(diceResult.Result), diceResult.Room)
+		Broadcast("message", msg, s.Streams[room])
+
+	}
+}
+
+// Get number of sides on dice from post {"dice": "number" and return the result}
+func RollDice(username string, room string, dice string) DiceResult {
+	intDice, err := strconv.Atoi(dice)
+	if err != nil {
+		log.Errorf("Error: can't convert dice number to int %s", dice)
+	}
+	diceResult := DiceResult{Username: username, Room: room, Result: rand.Intn(intDice) + 1}
+	return diceResult
+}
+
 func Register(username string, room string) (ClientGreeting, error) {
-	newToken, err := token.GenerateToken(uint(10))
+	newToken, err := token.GenerateToken(IDCounter)
 	if err != nil {
 		err := "Error creating JWT for user: " + username
 		log.Errorf("Error: %s", err)

@@ -26,6 +26,8 @@ func main() {
 
 	router.GET("/listen/:roomID", sse.HeadersMiddleware(), s.AddClientToStream(), sse.HandleClients())
 	router.GET("/listen", s.CreateStream(), func(c *gin.Context) { router.HandleContext(c) })
+	// POST form: { "dice" : "[number of sides]" }
+	router.POST("/listen/:roomID", s.HandleRolls())
 
 	// Loop through all streams and send a test message
 	go func() {
