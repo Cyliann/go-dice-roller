@@ -17,7 +17,7 @@ func main() {
 	router.GET("/play", token.Validate(), middleware.Headers(), s.AddClientToStream(), middleware.HandleClients())
 	router.GET("/register/*roomID", s.Register)
 	// POST form: { "dice" : "[number of sides]" }
-	router.POST("/roll/:roomID", s.HandleRolls())
+	router.POST("/roll", token.Validate(), s.HandleRolls())
 
 	log.Info("Listening on 8080...")
 	router.Run(":8080")
