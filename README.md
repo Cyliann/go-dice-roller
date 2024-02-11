@@ -1,23 +1,27 @@
-# :game_die: A server for multiplayer dice rolling :game_die:
+# :game_die: A backend for multiplayer dice rolling :game_die:
+
 ## Written in Go using Server-Sent Events
 
 ### Endpoints:
-- `/listen?username="{name}"`
-Subscribe to SSE. Returns an ID wit JWT and a username as `"{ 'id': uint32, 'username': string, 'token': string }"`
 
-    | Key   | Value  |
-    |--------------- | --------------- |
-    | id   | uint32  |
-    | username   | string  |
-    | token   | string  |
+- `/play`
+  Subscribe to SSE. Returns an ID of a subscribed stream `'{ "room": string }'`
 
-- `/roll` 
-Triggers a roll request with `"{ 'id': uint32, 'dice': uint8 }"`
+| Key  | Value  |
+| ---- | ------ |
+| room | string |
 
-    | Key  | Value    |
-    |--------------- | --------------- |
-    | id   | uint32   |
-    | dice   | uint8   |
+- `/roll`
+  Triggers a roll request with `'{ "dice": uint8 }'`
 
-Responds with an SSE Event with ID of the roller and the result of the roll
+| Key  | Value |
+| ---- | ----- |
+| dice | uint8 |
 
+Responds with an SSE Event with a username of the roller, id of the stream and the result of the roll `'{ "username": string, "room": string, "result": uint8 }'`
+
+| Key      | Value  |
+| -------- | ------ |
+| username | string |
+| room     | string |
+| result   | int    |

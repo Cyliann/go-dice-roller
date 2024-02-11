@@ -14,12 +14,17 @@ type Client struct {
 
 type ClientChan chan Message
 
-type RequestBody struct {
+type RegisterRequestBody struct {
+	Username string `json:"username" binding:"required"`
+	Room     string `json:"room"`
+}
+
+type RollRequestBody struct {
 	Dice uint8 `json:"dice" binding:"required"`
 }
 
 type DiceResult struct {
-	Username string
-	Room     string
-	Result   int
+	Username string `json:"username"`
+	Room     string `json:"room"`
+	Result   int    `json:"result"`
 }

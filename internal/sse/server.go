@@ -27,7 +27,7 @@ func (s *Server) AddClientToStream() gin.HandlerFunc {
 		}
 		client := val.(types.Client)
 
-		log.Infof("Client room: %s", client.Room)
+		log.Debugf("New client in room: %s", client.Room)
 
 		stream, exist := s.Streams[client.Room]
 		if !exist {
@@ -56,20 +56,28 @@ func (s *Server) CreateStream() string {
 }
 
 func (s *Server) Register(c *gin.Context) {
-	username := c.Query("username")
-	if username == "" {
+	var requestBody types.RegisterRequestBody
+
+	if err := c.ShouldBindJSON(&requestBody); err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"Error while accessing request body JSON": err})
+		return
+	}
+	if requestBody.Username == "" {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Username cannot be empty"})
 		return
 	}
 
-	room := c.Param("roomID")
-	log.Infof("roomID: %s", room)
-	if room == "/" {
-		room = s.CreateStream()
+	if requestBody.Room == "" {
+		requestBody.Room = s.CreateStream()
 	}
-	newToken, err := token.Generate(username, room)
+
+	if _, exist := s.Streams[requestBody.Room]; !exist {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Room doesn't exist"})
+		return
+	}
+
+	newToken, err := token.Generate(requestBody.Username, requestBody.Room)
 	if err != nil {
-		// err := "Error creating JWT for user: " + username
 		log.Errorf("Error: %s", err.Error())
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"Error": err.Error()})
 		return
@@ -79,13 +87,14 @@ func (s *Server) Register(c *gin.Context) {
 	c.SetSameSite(http.SameSiteDefaultMode)
 	c.SetCookie("Authorization", newToken, 3600*24, "", "", false, true)
 
-	c.Status(http.StatusOK)
+	c.JSON(http.StatusOK, gin.H{"Room": requestBody.Room})
+	log.Debugf("New client registered from %s in room %s", c.ClientIP(), requestBody.Room)
 }
 
 // Handler for post requests that runs RollDice fucntion
 func (s *Server) HandleRolls() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var requestBody types.RequestBody
+		var requestBody types.RollRequestBody
 		val, ok := c.Get("client")
 		if !ok {
 			err := errors.New("Couldn't get client")
@@ -96,6 +105,7 @@ func (s *Server) HandleRolls() gin.HandlerFunc {
 
 		if err := c.ShouldBindJSON(&requestBody); err != nil {
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"Error while accessing request body JSON": err})
+			return
 		}
 		diceResult := RollDice(client.Name, client.Room, requestBody.Dice)
 		msg, err := json.Marshal(diceResult)

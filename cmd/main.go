@@ -11,11 +11,12 @@ import (
 
 func main() {
 	gin.SetMode(gin.ReleaseMode)
+	log.SetLevel(log.DebugLevel)
 	router := gin.Default()
 	s := sse.NewServer()
 
 	router.GET("/play", token.Validate(), middleware.Headers(), s.AddClientToStream(), middleware.HandleClients())
-	router.GET("/register/*roomID", s.Register)
+	router.POST("/register", s.Register)
 	// POST form: { "dice" : "[number of sides]" }
 	router.POST("/roll", token.Validate(), s.HandleRolls())
 
