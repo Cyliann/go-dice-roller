@@ -2,12 +2,15 @@ package sse
 
 import (
 	"encoding/json"
-	"github.com/Cyliann/go-dice-roller/internal/utils/token"
+	"errors"
+	"math/rand"
+	"net/http"
+
+	"github.com/Cyliann/go-dice-roller/internal/token"
+	"github.com/Cyliann/go-dice-roller/internal/types"
 	"github.com/charmbracelet/log"
 	"github.com/dchest/uniuri"
 	"github.com/gin-gonic/gin"
-	"math/rand"
-	"net/http"
 )
 
 type RequestBody struct {
@@ -26,17 +29,21 @@ type Server struct {
 
 func (s *Server) AddClientToStream() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		roomID := c.Param("roomID")
+		val, ok := c.Get("client")
+		if !ok {
+			err := errors.New("Couldn't get client")
+			log.Error(err)
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"Error": err})
+		}
+		client := val.(types.Client)
 
-		stream, exist := s.Streams[roomID]
+		log.Infof("Client room: %s", client.Room)
+
+		stream, exist := s.Streams[client.Room]
 		if !exist {
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Room doesn't exist"})
 			return
 		}
-
-		// Initialize client channel
-		username := c.Query("username")
-		client := Client{ID: 0, Chan: make(ClientChan), Name: username}
 
 		// Send new connection to event server
 		stream.NewClients <- client
@@ -46,8 +53,6 @@ func (s *Server) AddClientToStream() gin.HandlerFunc {
 			stream.ClosedClients <- client
 		}()
 
-		c.Set("client", client)
-
 		c.Next()
 	}
 }
@@ -55,6 +60,7 @@ func (s *Server) AddClientToStream() gin.HandlerFunc {
 func (s *Server) CreateStream() string {
 	id := uniuri.NewLen(6)
 	s.Streams[id] = NewStream(id)
+	log.Infof("Room: %s", id)
 
 	return id
 }
@@ -67,10 +73,11 @@ func (s *Server) Register(c *gin.Context) {
 	}
 
 	room := c.Param("roomID")
-	if room == "" {
+	log.Infof("roomID: %s", room)
+	if room == "/" {
 		room = s.CreateStream()
 	}
-	newToken, err := token.GenerateToken(username, room)
+	newToken, err := token.Generate(username, room)
 	if err != nil {
 		// err := "Error creating JWT for user: " + username
 		log.Errorf("Error: %s", err.Error())
@@ -117,7 +124,7 @@ func RollDice(username string, room string, dice uint8) DiceResult {
 }
 
 func Broadcast(event string, message string, s Stream) {
-	msg := Message{
+	msg := types.Message{
 		EventType: event,
 		Data:      message,
 	}

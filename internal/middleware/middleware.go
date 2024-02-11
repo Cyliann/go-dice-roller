@@ -3,7 +3,7 @@ package middleware
 import (
 	"io"
 
-	"github.com/Cyliann/go-dice-roller/internal/sse"
+	"github.com/Cyliann/go-dice-roller/internal/types"
 	"github.com/charmbracelet/log"
 	"github.com/gin-gonic/gin"
 )
@@ -15,7 +15,7 @@ func HandleClients() gin.HandlerFunc {
 			log.Warn("Couldn't get client")
 			return
 		}
-		client, ok := v.(sse.Client)
+		client, ok := v.(types.Client)
 		if !ok {
 			return
 		}

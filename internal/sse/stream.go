@@ -1,27 +1,15 @@
 package sse
 
 import (
+	"github.com/Cyliann/go-dice-roller/internal/types"
 	"github.com/charmbracelet/log"
 )
 
-type Message struct {
-	EventType string
-	Data      string
-}
-
-type Client struct {
-	ID   uint
-	Chan chan Message
-	Name string
-}
-
-type ClientChan chan Message
-
 type Stream struct {
-	Message       chan Message
-	NewClients    chan Client
-	ClosedClients chan Client
-	TotalClients  map[Client]bool
+	Message       chan types.Message
+	NewClients    chan types.Client
+	ClosedClients chan types.Client
+	TotalClients  map[types.Client]bool
 }
 
 func (stream *Stream) listen() {
@@ -49,10 +37,10 @@ func (stream *Stream) listen() {
 
 func NewStream(id string) Stream {
 	stream := Stream{
-		Message:       make(chan Message),
-		NewClients:    make(chan Client),
-		ClosedClients: make(chan Client),
-		TotalClients:  make(map[Client]bool),
+		Message:       make(chan types.Message),
+		NewClients:    make(chan types.Client),
+		ClosedClients: make(chan types.Client),
+		TotalClients:  make(map[types.Client]bool),
 	}
 
 	go stream.listen()
