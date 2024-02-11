@@ -25,7 +25,6 @@ func GenerateToken(username string, room string) (string, error) {
 		"exp":      time.Now().Add(time.Hour * 24).Unix(), // expires in 1 day
 	})
 	IDCounter++
-	fmt.Printf("Secret: %s \n", hmacSampleSecret)
 
 	return token.SignedString([]byte(hmacSampleSecret))
 }
