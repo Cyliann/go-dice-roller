@@ -2,8 +2,6 @@ package sse
 
 import (
 	"encoding/json"
-	"errors"
-	"fmt"
 	"github.com/Cyliann/go-dice-roller/internal/utils/token"
 	"github.com/charmbracelet/log"
 	"github.com/dchest/uniuri"
@@ -11,31 +9,23 @@ import (
 	"io"
 	"math/rand"
 	"net/http"
-	"strconv"
 )
 
-var IDCounter uint = 0
-
-//type RegistrationInput struct {
-//	Username string `json:"username" binding:"required"`
-//}
-
 type RequestBody struct {
-	Dice string `json:"dice" binding:"required"`
+	Dice uint8 `json:"dice" binding:"required"`
 }
 
 type ClientGreeting struct {
-	ID       uint
-	Room     string
-	Username string
-	Token    string
+	ID       uint   `json:"id"`
+	Room     string `json:"room"`
+	Username string `json:"username"`
+	Token    string `json:"token"`
 }
 
 type DiceResult struct {
 	Username string
 	Room     string
 	Result   int
-	//Token    string
 }
 
 type Server struct {
@@ -54,11 +44,7 @@ func (s *Server) AddClientToStream() gin.HandlerFunc {
 
 		// Initialize client channel
 		username := c.Query("username")
-		if username == "" {
-			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Username cannot be empty"})
-			return
-		}
-		client := Client{ID: IDCounter, Chan: make(ClientChan), Name: username}
+		client := Client{ID: 0, Chan: make(ClientChan), Name: username}
 
 		// Send new connection to event server
 		stream.NewClients <- client
@@ -70,30 +56,35 @@ func (s *Server) AddClientToStream() gin.HandlerFunc {
 
 		c.Set("client", client)
 
-		// Register client and create a greeting with id and token
-		grt, err := Register(username, roomID)
-		if err != nil {
-			return
-		}
-
-		msg, err := json.Marshal(grt)
-		if err != nil {
-			log.Error("Error parsing a greeting. Client: %s", c.RemoteIP)
-			return
-		}
-
-		c.Writer.Write(append(msg, []byte("\n\n")...))
-		c.Writer.Flush()
 		c.Next()
 	}
 }
 
-func (s *Server) CreateStream() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		id := uniuri.NewLen(6)
-		s.Streams[id] = NewStream(id)
+func (s *Server) CreateStream() string {
+	id := uniuri.NewLen(6)
+	s.Streams[id] = NewStream(id)
 
-		c.Request.URL.Path = "/listen/" + id
+	return id
+}
+
+// Handler for post requests that runs RollDice fucntion
+func (s *Server) HandleRolls() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		username := c.Query("username")
+		room := c.Param("roomID")
+		var requestBody RequestBody
+
+		if err := c.ShouldBindJSON(&requestBody); err != nil {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"Error while accessing request body JSON": err})
+		}
+		diceResult := RollDice(username, room, requestBody.Dice)
+		msg, err := json.Marshal(diceResult)
+		if err != nil {
+			log.Errorf("Error parsing dice result", err)
+			return
+		}
+		Broadcast("roll", string(msg), s.Streams[room])
+
 	}
 }
 
@@ -123,44 +114,34 @@ func HandleClients() gin.HandlerFunc {
 	}
 }
 
-// Handler for post requests that runs RollDice fucntion
-func (s *Server) HandleRolls() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		username := c.Query("username")
-		room := c.Param("roomID")
-		var requestBody RequestBody
-
-		if err := c.ShouldBindJSON(&requestBody); err != nil {
-			log.Error("Error while accessing request body JSON: %s", err)
-		}
-		//c.JSON(http.StatusOK, requestBody)
-		diceResult := RollDice(username, room, requestBody.Dice)
-		msg := fmt.Sprintf("User %s rolled %s in the room %s", diceResult.Username, strconv.Itoa(diceResult.Result), diceResult.Room)
-		Broadcast("message", msg, s.Streams[room])
-
-	}
-}
-
 // Get number of sides on dice from post {"dice": "number" and return the result}
-func RollDice(username string, room string, dice string) DiceResult {
-	intDice, err := strconv.Atoi(dice)
-	if err != nil {
-		log.Errorf("Error: can't convert dice number to int %s", dice)
-	}
-	diceResult := DiceResult{Username: username, Room: room, Result: rand.Intn(intDice) + 1}
+func RollDice(username string, room string, dice uint8) DiceResult {
+	diceResult := DiceResult{Username: username, Room: room, Result: rand.Intn(int(dice)) + 1}
 	return diceResult
 }
 
-func Register(username string, room string) (ClientGreeting, error) {
-	newToken, err := token.GenerateToken(IDCounter)
-	if err != nil {
-		err := "Error creating JWT for user: " + username
-		log.Errorf("Error: %s", err)
-		return ClientGreeting{0, "", "", ""}, errors.New(err)
+func (s *Server) Register(c *gin.Context) {
+	username := c.Query("username")
+	if username == "" {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Username cannot be empty"})
+		return
 	}
-	greeting := ClientGreeting{ID: IDCounter, Room: room, Username: username, Token: newToken}
-	IDCounter++
-	return greeting, nil
+
+	room := c.Param("roomID")
+	if room == "" {
+		room = s.CreateStream()
+	}
+	newToken, err := token.GenerateToken(username, room)
+	if err != nil {
+		// err := "Error creating JWT for user: " + username
+		log.Errorf("Error: %s", err)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"Error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"token": newToken,
+	})
 }
 
 func Broadcast(event string, message string, s Stream) {

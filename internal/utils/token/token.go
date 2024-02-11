@@ -7,23 +7,27 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dchest/uniuri"
 	"github.com/gin-gonic/gin"
-	jwt "github.com/golang-jwt/jwt"
+	"github.com/golang-jwt/jwt"
 )
 
-var hmacSampleSecret []byte
+var (
+	IDCounter        uint = 0
+	hmacSampleSecret      = uniuri.New() // generate random secret
+)
 
-func GenerateToken(user_id uint) (string, error) {
-
-	//token_lifespan, err := strconv.Atoi(os.Getenv("TOKEN_HOUR_LIFESPAN"))
-
+func GenerateToken(username string, room string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"authorized": true,
-		"nbf":        time.Date(2015, 10, 10, 12, 0, 0, 0, time.UTC).Unix(),
-		"user_id":    user_id,
+		"sub":      IDCounter,
+		"room":     room,
+		"username": username,
+		"exp":      time.Now().Add(time.Hour * 24).Unix(), // expires in 1 day
 	})
-	return token.SignedString(hmacSampleSecret)
+	IDCounter++
+	fmt.Printf("Secret: %s \n", hmacSampleSecret)
 
+	return token.SignedString([]byte(hmacSampleSecret))
 }
 
 func TokenValid(c *gin.Context) error {
