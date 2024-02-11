@@ -139,9 +139,11 @@ func (s *Server) Register(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"token": newToken,
-	})
+	// Send a cookie
+	c.SetSameSite(http.SameSiteDefaultMode)
+	c.SetCookie("Authorization", newToken, 3600*24, "", "", false, true)
+
+	c.JSON(http.StatusOK, gin.H{})
 }
 
 func Broadcast(event string, message string, s Stream) {
