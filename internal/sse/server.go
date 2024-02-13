@@ -3,6 +3,7 @@ package sse
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math/rand"
 	"net/http"
 
@@ -91,10 +92,13 @@ func (s *Server) Register(c *gin.Context) {
 	log.Debugf("New client registered from %s in room %s", c.ClientIP(), requestBody.Room)
 }
 
-// Handler for post requests that runs RollDice fucntion
+// HandleRolls is a handler for post requests that runs RollDice function
 func (s *Server) HandleRolls() gin.HandlerFunc {
 	return func(c *gin.Context) {
+
 		var requestBody types.RollRequestBody
+		var diceArray []uint8
+
 		val, ok := c.Get("client")
 		if !ok {
 			err := errors.New("Couldn't get client")
@@ -107,7 +111,14 @@ func (s *Server) HandleRolls() gin.HandlerFunc {
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"Error while accessing request body JSON": err})
 			return
 		}
-		diceResult := RollDice(client.Name, client.Room, requestBody.Dice)
+
+		if err := json.Unmarshal([]byte(requestBody.Dice), &diceArray); err != nil {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"Error while parsing JSON to array": err})
+			fmt.Printf("Unmarshaled: %v", diceArray)
+		}
+		fmt.Printf("Unmarshaled array: %v", diceArray)
+
+		diceResult := RollDice(client.Name, client.Room, diceArray)
 		msg, err := json.Marshal(diceResult)
 		if err != nil {
 			log.Errorf("Error parsing dice result: %s", err.Error())
@@ -123,8 +134,13 @@ func NewServer() Server {
 }
 
 // Get number of sides on dice from post { "dice": "number" } and return the result
-func RollDice(username string, room string, dice uint8) types.DiceResult {
-	diceResult := types.DiceResult{Username: username, Room: room, Result: rand.Intn(int(dice)) + 1}
+func RollDice(username string, room string, dice []byte) types.DiceResult {
+	var diceArray map[byte]byte
+	diceArray = make(map[byte]byte)
+	for ind, roll := range dice {
+		diceArray[byte(ind)] = byte(rand.Intn(int(roll)) + 1)
+	}
+	diceResult := types.DiceResult{Username: username, Room: room, Result: diceArray}
 	return diceResult
 }
 

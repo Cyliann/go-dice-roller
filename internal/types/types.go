@@ -20,11 +20,11 @@ type RegisterRequestBody struct {
 }
 
 type RollRequestBody struct {
-	Dice uint8 `json:"dice" binding:"required"`
+	Dice string `json:"dice" binding:"required"`
 }
 
 type DiceResult struct {
-	Username string `json:"username"`
-	Room     string `json:"room"`
-	Result   int    `json:"result"`
+	Username string        `json:"username"`
+	Room     string        `json:"room"`
+	Result   map[byte]byte `json:"result"`
 }
