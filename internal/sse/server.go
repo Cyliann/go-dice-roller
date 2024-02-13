@@ -3,7 +3,6 @@ package sse
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"math/rand"
 	"net/http"
 
@@ -97,8 +96,6 @@ func (s *Server) HandleRolls() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
 		var requestBody types.RollRequestBody
-		//var diceArray map[byte]byte
-		//diceArray = make(map[byte]byte)
 
 		val, ok := c.Get("client")
 		if !ok {
@@ -117,9 +114,7 @@ func (s *Server) HandleRolls() gin.HandlerFunc {
 		//fmt.Printf("%v", requestBody.Dice)
 		//if err := json.Unmarshal([]byte(requestBody.Dice), &diceArray); err != nil {
 		//	c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"Error while parsing JSON to array": err})
-		//	fmt.Printf("Unmarshaled: %v", requestBody.Dice)
-		//}
-		fmt.Printf("Unmarshaled array: %v", requestBody.Dice)
+		//	fmt.Printf("Unmarshaled: %v", requestBody.Dice
 
 		diceResult := RollDice(client.Name, client.Room, requestBody.Dice)
 		msg, err := json.Marshal(diceResult)
