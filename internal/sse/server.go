@@ -22,7 +22,7 @@ func (s *Server) AddClientToStream() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		val, ok := c.Get("client")
 		if !ok {
-			err := errors.New("Couldn't get client")
+			err := errors.New("couldn't get client")
 			log.Error(err)
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"Error": err})
 		}
@@ -97,28 +97,31 @@ func (s *Server) HandleRolls() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
 		var requestBody types.RollRequestBody
-		var diceArray []uint8
+		//var diceArray map[byte]byte
+		//diceArray = make(map[byte]byte)
 
 		val, ok := c.Get("client")
 		if !ok {
-			err := errors.New("Couldn't get client")
+			err := errors.New("couldn't get client")
 			log.Error(err)
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"Error": err})
 		}
 		client := val.(types.Client)
 
+		//Unmarshalling is not needed since the data is bound directly from JSON to a map
 		if err := c.ShouldBindJSON(&requestBody); err != nil {
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"Error while accessing request body JSON": err})
 			return
 		}
 
-		if err := json.Unmarshal([]byte(requestBody.Dice), &diceArray); err != nil {
-			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"Error while parsing JSON to array": err})
-			fmt.Printf("Unmarshaled: %v", diceArray)
-		}
-		fmt.Printf("Unmarshaled array: %v", diceArray)
+		//fmt.Printf("%v", requestBody.Dice)
+		//if err := json.Unmarshal([]byte(requestBody.Dice), &diceArray); err != nil {
+		//	c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"Error while parsing JSON to array": err})
+		//	fmt.Printf("Unmarshaled: %v", requestBody.Dice)
+		//}
+		fmt.Printf("Unmarshaled array: %v", requestBody.Dice)
 
-		diceResult := RollDice(client.Name, client.Room, diceArray)
+		diceResult := RollDice(client.Name, client.Room, requestBody.Dice)
 		msg, err := json.Marshal(diceResult)
 		if err != nil {
 			log.Errorf("Error parsing dice result: %s", err.Error())
@@ -133,12 +136,15 @@ func NewServer() Server {
 	return Server{Streams: make(map[string]Stream)}
 }
 
-// Get number of sides on dice from post { "dice": "number" } and return the result
-func RollDice(username string, room string, dice []byte) types.DiceResult {
+// RollDice Get number of sides on dice from POST form { "dice": "{"id1": sides, "id2": sides}" } and return the result
+func RollDice(username string, room string, dice map[byte]byte) types.DiceResult {
+
 	var diceArray map[byte]byte
 	diceArray = make(map[byte]byte)
-	for ind, roll := range dice {
-		diceArray[byte(ind)] = byte(rand.Intn(int(roll)) + 1)
+
+	// The id is kept from the original POST form, and there is a random roll assigned to it
+	for id, diceSides := range dice {
+		diceArray[id] = byte(rand.Intn(int(diceSides)) + 1)
 	}
 	diceResult := types.DiceResult{Username: username, Room: room, Result: diceArray}
 	return diceResult

@@ -20,7 +20,7 @@ type RegisterRequestBody struct {
 }
 
 type RollRequestBody struct {
-	Dice string `json:"dice" binding:"required"`
+	Dice map[byte]byte `json:"dice" binding:"required"`
 }
 
 type DiceResult struct {
