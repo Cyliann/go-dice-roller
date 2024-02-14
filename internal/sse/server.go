@@ -1,7 +1,6 @@
 package sse
 
 import (
-	"encoding/json"
 	"errors"
 	"math/rand"
 	"net/http"
@@ -105,19 +104,12 @@ func (s *Server) HandleRolls() gin.HandlerFunc {
 		}
 		client := val.(types.Client)
 
-		//Unmarshalling is not needed since the data is bound directly from JSON to a map
 		if err := c.ShouldBindJSON(&requestBody); err != nil {
-			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"Error while accessing request body JSON": err})
-			return
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"Error while parsing JSON to array": err})
 		}
 
-		//fmt.Printf("%v", requestBody.Dice)
-		//if err := json.Unmarshal([]byte(requestBody.Dice), &diceArray); err != nil {
-		//	c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"Error while parsing JSON to array": err})
-		//	fmt.Printf("Unmarshaled: %v", requestBody.Dice
-
 		diceResult := RollDice(client.Name, client.Room, requestBody.Dice)
-		msg, err := json.Marshal(diceResult)
+		msg, err := diceResult.MarshalJSON()
 		if err != nil {
 			log.Errorf("Error parsing dice result: %s", err.Error())
 			return
@@ -132,14 +124,13 @@ func NewServer() Server {
 }
 
 // RollDice Get number of sides on dice from POST form { "dice": "{"id1": sides, "id2": sides}" } and return the result
-func RollDice(username string, room string, dice map[byte]byte) types.DiceResult {
+func RollDice(username string, room string, dice types.DiceArray) types.DiceResult {
 
-	var diceArray map[byte]byte
-	diceArray = make(map[byte]byte)
+	var diceArray types.DiceArray
 
 	// The id is kept from the original POST form, and there is a random roll assigned to it
-	for id, diceSides := range dice {
-		diceArray[id] = byte(rand.Intn(int(diceSides)) + 1)
+	for _, diceSides := range dice {
+		diceArray = append(diceArray, uint8(rand.Intn(int(diceSides))+1))
 	}
 	diceResult := types.DiceResult{Username: username, Room: room, Result: diceArray}
 	return diceResult
