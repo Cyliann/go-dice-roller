@@ -1,11 +1,12 @@
-package sse
+package server
 
 import (
 	"errors"
-	"math/rand"
 	"net/http"
 
+	"github.com/Cyliann/go-dice-roller/internal/stream"
 	"github.com/Cyliann/go-dice-roller/internal/token"
+	"github.com/Cyliann/go-dice-roller/internal/utils"
 	"github.com/Cyliann/go-dice-roller/internal/types"
 	"github.com/charmbracelet/log"
 	"github.com/dchest/uniuri"
@@ -13,7 +14,9 @@ import (
 )
 
 type Server struct {
-	Streams map[string]Stream
+	Addr    string
+	Router  *gin.Engine
+	Streams map[string]stream.Stream
 }
 
 func (s *Server) AddClientToStream() gin.HandlerFunc {
@@ -48,7 +51,7 @@ func (s *Server) AddClientToStream() gin.HandlerFunc {
 
 func (s *Server) CreateStream() string {
 	id := uniuri.NewLen(6)
-	s.Streams[id] = NewStream(id)
+	s.Streams[id] = stream.New(id)
 	log.Infof("Room: %s", id)
 
 	return id
@@ -108,38 +111,21 @@ func (s *Server) HandleRolls() gin.HandlerFunc {
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"Error while parsing JSON to array": err})
 		}
 
-		diceResult := RollDice(client.Name, client.Room, requestBody.Dice)
+		diceResult := utils.RollDice(client.Name, client.Room, requestBody.Dice)
 		msg, err := diceResult.MarshalJSON()
 		if err != nil {
 			log.Errorf("Error parsing dice result: %s", err.Error())
 			return
 		}
-		Broadcast("roll", string(msg), s.Streams[client.Room])
+		utils.Broadcast("roll", string(msg), s.Streams[client.Room])
 
 	}
 }
 
-func NewServer() Server {
-	return Server{Streams: make(map[string]Stream)}
-}
-
-// RollDice Get number of sides on dice from POST form { "dice": "{"id1": sides, "id2": sides}" } and return the result
-func RollDice(username string, room string, dice types.DiceArray) types.DiceResult {
-
-	var diceArray types.DiceArray
-
-	// The id is kept from the original POST form, and there is a random roll assigned to it
-	for _, diceSides := range dice {
-		diceArray = append(diceArray, uint8(rand.Intn(int(diceSides))+1))
+func New(router *gin.Engine) Server {
+	return Server{
+		Addr:    ":8080",
+		Router:  router,
+		Streams: make(map[string]stream.Stream),
 	}
-	diceResult := types.DiceResult{Username: username, Room: room, Result: diceArray}
-	return diceResult
-}
-
-func Broadcast(event string, message string, s Stream) {
-	msg := types.Message{
-		EventType: event,
-		Data:      message,
-	}
-	s.Message <- msg
 }

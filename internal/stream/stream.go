@@ -1,4 +1,4 @@
-package sse
+package stream
 
 import (
 	"github.com/Cyliann/go-dice-roller/internal/types"
@@ -35,7 +35,7 @@ func (stream *Stream) listen() {
 	}
 }
 
-func NewStream(id string) Stream {
+func New(id string) Stream {
 	stream := Stream{
 		Message:       make(chan types.Message),
 		NewClients:    make(chan types.Client),
