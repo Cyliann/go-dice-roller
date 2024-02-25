@@ -10,6 +10,7 @@ import (
 	"github.com/dchest/uniuri"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt"
+	jwtr "github.com/golang-jwt/jwt/request"
 )
 
 var (
@@ -31,29 +32,23 @@ func Generate(username string, room string) (string, error) {
 
 func Validate() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		tokenStr, err := c.Cookie("Authorization")
-
-		if err != nil {
-			c.AbortWithStatus(http.StatusUnauthorized)
-		}
-
-		// From: https://pkg.go.dev/github.com/golang-jwt/jwt@v3.2.2+incompatible#Parse
-		token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
+		// From: https://pkg.go.dev/github.com/golang-jwt/jwt/v5@v5.2.0/request#ParseFromRequest
+		token, err := jwtr.ParseFromRequest(c.Request, jwtr.AuthorizationHeaderExtractor, func(token *jwt.Token) (interface{}, error) {
 			// Don't forget to validate the alg is what you expect:
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
 			}
-
 			return []byte(signingSecret), nil
 		})
 
 		if err != nil {
 			log.Errorf(err.Error())
-			c.AbortWithStatus(http.StatusUnauthorized)
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"Error": err.Error()})
 			return
 		}
 
 		claims, ok := token.Claims.(jwt.MapClaims)
+
 		if !ok || !token.Valid {
 			log.Errorf("Invalid claims or token")
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"Error": "Invalid claims or token"})

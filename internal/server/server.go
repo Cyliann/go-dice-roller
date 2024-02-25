@@ -6,8 +6,8 @@ import (
 
 	"github.com/Cyliann/go-dice-roller/internal/stream"
 	"github.com/Cyliann/go-dice-roller/internal/token"
-	"github.com/Cyliann/go-dice-roller/internal/utils"
 	"github.com/Cyliann/go-dice-roller/internal/types"
+	"github.com/Cyliann/go-dice-roller/internal/utils"
 	"github.com/charmbracelet/log"
 	"github.com/dchest/uniuri"
 	"github.com/gin-gonic/gin"
@@ -85,9 +85,9 @@ func (s *Server) Register(c *gin.Context) {
 		return
 	}
 
-	// Send a cookie
-	c.SetSameSite(http.SameSiteDefaultMode)
-	c.SetCookie("Authorization", newToken, 3600*24, "", "", false, true)
+	// Send authorization header with the newToken
+	c.Header("Access-Control-Allow-Headers", "Authorization")
+	c.Header("Authorization", newToken)
 
 	c.JSON(http.StatusOK, gin.H{"Room": requestBody.Room})
 	log.Debugf("New client registered from %s in room %s", c.ClientIP(), requestBody.Room)
