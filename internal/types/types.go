@@ -2,7 +2,6 @@ package types
 
 import (
 	"fmt"
-	"strings"
 )
 
 type Message struct {
@@ -24,26 +23,20 @@ type RegisterRequestBody struct {
 	Room     string `json:"room"`
 }
 
-type DiceArray []uint8
+type Dice uint8
 
 type RollRequestBody struct {
-	Dice DiceArray `json:"dice" binding:"required"`
+	Dice Dice `json:"dice" binding:"required"`
 }
 
 type DiceResult struct {
-	Username string    `json:"username"`
-	Room     string    `json:"room"`
-	Result   DiceArray `json:"result"`
+	Username string `json:"username"`
+	Room     string `json:"room"`
+	Result   Dice   `json:"result"`
 }
 
 // From: https://stackoverflow.com/questions/14177862/how-to-marshal-a-byte-uint8-array-as-json-array-in-go
 func (dr *DiceResult) MarshalJSON() ([]byte, error) {
-	var array string
-	if dr.Result == nil {
-		array = "null"
-	} else {
-		array = strings.Join(strings.Fields(fmt.Sprintf("%d", dr.Result)), ",")
-	}
-	jsonResult := fmt.Sprintf(`{"Username":%q, "Room":%q, "Result":%s}`, dr.Username, dr.Room, array)
+	jsonResult := fmt.Sprintf(`{"Username":%q, "Room":%q, "Result":%d}`, dr.Username, dr.Room, dr.Result)
 	return []byte(jsonResult), nil
 }
