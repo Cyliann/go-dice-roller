@@ -14,7 +14,7 @@ func loadRoutes() *gin.Engine {
 
 	router.GET("/play", token.Validate(), middleware.Headers(), s.AddClientToStream(), middleware.HandleClients())
 	router.POST("/register", s.Register)
-	// POST form: { "dice" : "[number of sides]" }
+	// POST form: { "dice" : "number of sides" }
 	router.POST("/roll", token.Validate(), s.HandleRolls())
 
 	return router

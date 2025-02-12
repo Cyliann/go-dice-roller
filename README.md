@@ -3,23 +3,35 @@
 ## Written in Go using Server-Sent Events
 
 ### Endpoints:
+- `/register`
+  Register a new user in a specific room with `'{ "user": string, "room": string }`
+
+| Key  | Value    |
+| ---- | -------- |
+| user | string   |
+| room | string   |
+
+  If _room_ is an empty string it creates a new room.
+  If _room_ is non empty and doesn't exist, returns a 400:"Room doesn't exist" error.
+
+  Returns a room in which the user is registered.
+  
+| Key  | Value    |
+| ---- | -------- |
+| room | string   |
 
 - `/play`
-  Subscribe to SSE. Returns an ID of a subscribed stream `'{ "room": string }'`
-
-| Key  | Value  |
-| ---- | ------ |
-| room | string |
+  Subscribe to SSE.
 
 - `/roll`
-  Triggers a roll request with `'{ "dice": { "id": nrOfSides } }'` (allows for multiple rolls and keeps the order) 
+  Triggers a roll request with `'{ "dice": uin8 }'` 
 
-| Key  | Value                |
-| ---- |----------------------|
-| dice | { "id" : nrOfSides } |
+| Key  | Value   |
+| ---- | ------- |
+| dice | uin8    |
 
 Example body of request:
-`'{ "dice": { "0": 6, "1": 10, "2": 20 } }'`
+`'{ "dice": 20 }'`
 
 Responds with an SSE Event with a username of the roller, id of the stream and the result of the roll `'{ "username": string, "room": string, "result": uint8 }'`
 
