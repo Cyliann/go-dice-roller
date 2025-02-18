@@ -1,16 +1,17 @@
 package application
 
 import (
+	_ "github.com/Cyliann/go-dice-roller/docs"
 	"github.com/Cyliann/go-dice-roller/internal/middleware"
 	"github.com/Cyliann/go-dice-roller/internal/server"
 	"github.com/Cyliann/go-dice-roller/internal/token"
 	"github.com/gin-gonic/gin"
-	swaggerfiles "github.com/swaggo/files"
+	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 func loadRoutes() *gin.Engine {
-	gin.SetMode(gin.ReleaseMode)
+	gin.SetMode(gin.DebugMode)
 	router := gin.Default()
 	s := server.New(router)
 
@@ -20,6 +21,6 @@ func loadRoutes() *gin.Engine {
 	router.POST("/roll", token.Validate(), s.HandleRolls())
 
 	// Docs
-	router.GET("/docs/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
+	router.GET("/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	return router
 }

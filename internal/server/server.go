@@ -59,6 +59,17 @@ func (s *Server) CreateStream() string {
 	return id
 }
 
+// @Summary user registration
+// @Schemes
+// @Description Creates a new token for a user. Returns the room user is registered in and an auth token in the Auth header.
+// @Tags user
+// @Accept json
+// @Produce json
+// @Param   user   string  string  true   "Username"
+// @Param   room   string  string  false  "Room ID"
+// @Success 200 {string} room
+// @Failure 400
+// @Router /register [post]
 func (s *Server) Register(c *gin.Context) {
 	var requestBody types.RegisterRequestBody
 

@@ -1,4 +1,22 @@
 info:
   contact: {}
-paths: {}
+paths:
+  /register:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new token for a user. Returns the room user is registered
+        in and an auth token in the Auth header.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+      summary: user registration
+      tags:
+      - user
 swagger: "2.0"

@@ -3,7 +3,10 @@
 ## Written in Go using Server-Sent Events
 
 ### Endpoints:
-- `/register`
+- `/docs/index.html`
+  [Swagger](https://github.com/swaggo/swag) documentation.
+
+- `/register` POST
   Register a new user in a specific room with `'{ "user": string, "room": string }`
 
 | Key  | Value    |
@@ -20,10 +23,10 @@
 | ---- | -------- |
 | room | string   |
 
-- `/play`
+- `/play` GET
   Subscribe to SSE.
 
-- `/roll`
+- `/roll` POST
   Triggers a roll request with `'{ "dice": uin8 }'` 
 
 | Key  | Value   |
