@@ -20,6 +20,9 @@ func (stream *Stream) listen() {
 			stream.TotalClients[client] = true
 			log.Infof("Client added. %d registered clients", len(stream.TotalClients))
 
+			eventMsg := types.Message{EventType: "join", Data: client.Name}
+			stream.send_message(eventMsg)
+
 		// Remove closed client
 		case client := <-stream.ClosedClients:
 			delete(stream.TotalClients, client)
@@ -28,10 +31,14 @@ func (stream *Stream) listen() {
 
 		// Broadcast message to client
 		case eventMsg := <-stream.Message:
-			for client := range stream.TotalClients {
-				client.Chan <- eventMsg
-			}
+			stream.send_message(eventMsg)
 		}
+	}
+}
+
+func (stream *Stream) send_message(eventMsg types.Message) {
+	for client := range stream.TotalClients {
+		client.Chan <- eventMsg
 	}
 }
 
