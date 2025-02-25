@@ -13,10 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-const PORT = ":8080"
-
 type Server struct {
-	Addr    string
 	Router  *gin.Engine
 	Streams map[string]stream.Stream
 }
@@ -137,7 +134,6 @@ func (s *Server) HandleRolls() gin.HandlerFunc {
 
 func New(router *gin.Engine) Server {
 	return Server{
-		Addr:    PORT,
 		Router:  router,
 		Streams: make(map[string]stream.Stream),
 	}
