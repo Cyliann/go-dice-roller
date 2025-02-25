@@ -11,7 +11,7 @@ import (
 )
 
 func loadRoutes() *gin.Engine {
-	gin.SetMode(gin.DebugMode)
+	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 	s := server.New(router)
 

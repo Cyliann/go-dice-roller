@@ -19,9 +19,9 @@ func New() App {
 }
 
 func (a *App) Start() error {
-	log.SetLevel(log.DebugLevel)
+	log.SetLevel(log.InfoLevel)
 	server := &http.Server{
-		Addr:    ":8080",
+		Addr:    "0.0.0.0:8080",
 		Handler: a.router,
 	}
 
