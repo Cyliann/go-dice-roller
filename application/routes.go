@@ -17,7 +17,7 @@ func loadRoutes() *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"https://diceroll.cych.eu"}, // Frontend URL
+		AllowOrigins:     []string{"https://diceroll.cylian.eu"}, // Frontend URL
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length", "Authorization"},
